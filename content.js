@@ -40,64 +40,12 @@ chrome.storage.onChanged.addListener((changes, area) => {
   applyBackground();
 });
 
-/* ---------------------------------------------------------------
-   Task completati
-   --------------------------------------------------------------- */
-function initTaskTracker() {
-  const taskLinks = document.querySelectorAll('a[href^="/cal/events/"]');
-
-  taskLinks.forEach(link => {
-    // Evita di aggiungere più checkbox se la pagina si aggiorna dinamicamente
-    if (link.dataset.trackerProcessed) return;
-    link.dataset.trackerProcessed = 'true';
-
-    // Identificativo unico basato sul link (es. /cal/events/53)
-    const taskId = link.getAttribute('href');
-
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.className = 'task-checkbox';
-    checkbox.setAttribute('aria-label', 'Segna il compito come completato');
-
-    // Recupera lo stato salvato
-    chrome.storage.sync.get([taskId], result => {
-      if (result[taskId]) {
-        checkbox.checked = true;
-        link.classList.add('task-completed');
-      }
-    });
-
-    checkbox.addEventListener('click', e => {
-      e.stopPropagation(); // non aprire il compito quando clicchi la checkbox
-      const isChecked = checkbox.checked;
-
-      link.classList.toggle('task-completed', isChecked);
-
-      if (isChecked) {
-        checkbox.classList.remove('task-checkbox--pop');
-        void checkbox.offsetWidth; // riavvia l'animazione
-        checkbox.classList.add('task-checkbox--pop');
-        chrome.storage.sync.set({ [taskId]: true });
-      } else {
-        // Rimuoviamo la chiave invece di salvare "false": risparmia spazio nello storage
-        chrome.storage.sync.remove(taskId);
-      }
-    });
-
-    link.prepend(checkbox);
-  });
-}
-
-initTaskTracker();
-
-// Il sito è dinamico: osserviamo i cambiamenti, con un solo aggiornamento per frame
 let scheduled = false;
 new MutationObserver(() => {
   if (scheduled) return;
   scheduled = true;
   requestAnimationFrame(() => {
     scheduled = false;
-    initTaskTracker();
     if (currentBackground && !document.getElementById('uh-bg')) applyBackground();
   });
 }).observe(document.body, { childList: true, subtree: true });
