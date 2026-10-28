@@ -1,0 +1,267 @@
+/* Umanet Hacks — stile dei task completati e della checkbox.
+   I colori arrivano da variabili CSS definite in base a data-theme del sito. */
+
+/* Valori di base, usati se il sito non imposta nessun data-theme noto */
+:root {
+  --uh-accent: #2f8f6b;
+  --uh-tint: rgba(47, 143, 107, 0.12);
+  --uh-on-accent: #ffffff;
+}
+
+/* ---------- Temi chiari ---------- */
+[data-theme="light"] {
+  /* primario del tema light del sito: #422ad5 */
+  --uh-accent: #422ad5;
+  --uh-tint: rgba(66, 42, 213, 0.09);
+  --uh-on-accent: #ffffff;
+}
+[data-theme="emerald"] {
+  --uh-accent: #2f9e5e;
+  --uh-tint: rgba(102, 204, 138, 0.22);
+  --uh-on-accent: #ffffff;
+}
+[data-theme="corporate"] {
+  --uh-accent: #4b6bfb;
+  --uh-tint: rgba(75, 107, 251, 0.10);
+  --uh-on-accent: #ffffff;
+}
+[data-theme="retro"] {
+  --uh-accent: #c9605a;
+  --uh-tint: rgba(239, 153, 149, 0.28);
+  --uh-on-accent: #ffffff;
+}
+[data-theme="autumn"] {
+  --uh-accent: #8c0327;
+  --uh-tint: rgba(140, 3, 39, 0.09);
+  --uh-on-accent: #ffffff;
+}
+
+/* ---------- Temi scuri ---------- */
+[data-theme="dark"] {
+  /* primario del tema dark del sito: #605dff, schiarito per leggersi bene
+     sul grigio delle card (#505050) */
+  --uh-accent: #8381ff;
+  --uh-tint: rgba(131, 129, 255, 0.20);
+  --uh-on-accent: #ffffff;
+}
+[data-theme="aqua"] {
+  --uh-accent: #09ecf3;
+  --uh-tint: rgba(9, 236, 243, 0.16);
+  --uh-on-accent: #04343a;
+}
+[data-theme="business"] {
+  --uh-accent: #4a93d6;
+  --uh-tint: rgba(74, 147, 214, 0.17);
+  --uh-on-accent: #07213a;
+}
+[data-theme="night"] {
+  --uh-accent: #38bdf8;
+  --uh-tint: rgba(56, 189, 248, 0.15);
+  --uh-on-accent: #0c2a3a;
+}
+
+/* ---------- Checkbox ---------- */
+.task-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 0 8px 0 0;
+  padding: 0;
+  vertical-align: -3px;
+  border: 1.5px solid currentColor;
+  border-radius: 5px;
+  background: transparent;
+  opacity: 0.55;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+
+.task-checkbox:hover {
+  opacity: 1;
+  border-color: var(--uh-accent);
+}
+
+.task-checkbox:focus-visible {
+  outline: 2px solid var(--uh-accent);
+  outline-offset: 2px;
+}
+
+.task-checkbox:checked {
+  opacity: 1;
+  border-color: var(--uh-accent);
+  background-color: var(--uh-accent);
+}
+
+.task-checkbox:checked::after {
+  content: "";
+  position: absolute;
+  left: 4.5px;
+  top: 1px;
+  width: 4px;
+  height: 8px;
+  border: solid var(--uh-on-accent);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* Piccolo "pop" solo quando l'utente spunta */
+.task-checkbox.task-checkbox--pop {
+  animation: uh-pop 0.22s ease-out;
+}
+
+@keyframes uh-pop {
+  50% { transform: scale(1.18); }
+}
+
+/* ---------- Compito completato ---------- */
+.task-completed {
+  opacity: 0.65;
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+  background-image: linear-gradient(var(--uh-tint), var(--uh-tint));
+  box-shadow: inset 3px 0 0 var(--uh-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .task-checkbox {
+    transition: none;
+  }
+  .task-checkbox.task-checkbox--pop {
+    animation: none;
+  }
+}
+
+/* ---------- Sfondo personalizzato (caricato dal popup) ---------- */
+#uh-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  pointer-events: none;
+}
+
+/* Il body deve essere trasparente, altrimenti copre lo sfondo.
+   Le card e i blocchi con un proprio colore restano pieni. */
+html.uh-has-bg body {
+  background: transparent !important;
+}
+
+/* ---------- Mostra risposta ---------- */
+/* L'anteprima grezza di default non si vede più */
+.uh-preview-hidden { display: none !important; }
+
+/* Freccetta + etichetta: colori dal tema (--uh-accent segue data-theme) */
+.uh-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 2px 0 0 -6px;
+  padding: 4px 8px 4px 6px;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--uh-accent);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+.uh-toggle:hover { background: var(--uh-tint); }
+.uh-toggle:focus-visible {
+  outline: 2px solid var(--uh-accent);
+  outline-offset: 1px;
+}
+.uh-chevron {
+  flex: none;
+  transition: transform 0.25s ease;
+}
+.uh-toggle[aria-expanded="true"] .uh-chevron { transform: rotate(180deg); }
+
+/* Apertura morbida: la riga passa da 0fr a 1fr */
+.uh-answer-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows 0.28s ease, opacity 0.2s ease;
+}
+.uh-answer-wrap.is-open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+.uh-answer-inner { overflow: hidden; min-height: 0; }
+
+/* Risposta formattata, come aprendo la domanda */
+.uh-answer-full {
+  margin: 8px 0 2px;
+  padding: 10px 14px;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  white-space: normal;
+  border-left: 3px solid var(--uh-accent);
+  border-radius: 0 10px 10px 0;
+  background: var(--uh-tint);
+}
+.uh-answer-full p { margin: 0 0 0.6em; }
+.uh-answer-full ul,
+.uh-answer-full ol { margin: 0 0 0.6em; padding-left: 1.4em; }
+.uh-answer-full ul { list-style: disc; }
+.uh-answer-full ol { list-style: decimal; }
+.uh-answer-full li { margin: 0 0 0.15em; padding: 0; }
+.uh-answer-full li::marker { color: var(--uh-accent); }
+.uh-answer-full h3, .uh-answer-full h4, .uh-answer-full h5, .uh-answer-full h6 {
+  margin: 0.4em 0 0.3em;
+  font-weight: 700;
+}
+.uh-answer-full code {
+  padding: 0 4px;
+  border-radius: 4px;
+  background: rgba(127, 127, 127, 0.18);
+  font-size: 0.9em;
+}
+.uh-answer-full a { text-decoration: underline; }
+.uh-answer-full > :last-child { margin-bottom: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .uh-chevron, .uh-answer-wrap, .uh-toggle { transition: none; }
+}
+
+
+/* ---------- Tendina "Apri risorse" ---------- */
+.uh-hidden { display: none !important; }
+
+.uh-res { position: relative; display: inline-block; }
+.uh-res-toggle { gap: 6px; }
+.uh-res-chevron { flex: none; transition: transform 0.2s ease; }
+.uh-res-toggle[aria-expanded="true"] .uh-res-chevron { transform: rotate(180deg); }
+
+.uh-res-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  min-width: 16rem;
+  margin-top: 4px;
+}
+.uh-res-menu[hidden] { display: none !important; }
+.uh-res-menu li > a,
+.uh-res-menu li > button {
+  display: block;
+  width: 100%;
+  text-align: left;
+}
+.uh-res-item { display: flex; flex-direction: column; gap: 1px; }
+.uh-res-item strong { font-weight: 600; }
+.uh-res-item small { font-size: 0.75rem; opacity: 0.65; }
+
+@media (prefers-reduced-motion: reduce) {
+  .uh-res-chevron { transition: none; }
+}

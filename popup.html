@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Umanet Hacks</title>
+  <style>
+    :root {
+      --bg: #0a0c10;
+      --panel: #131720;
+      --line: #252b38;
+      --text: #e8ecf3;
+      --muted: #9aa4b6;
+      --ring: #38bdf8;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      width: 320px;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 16px 14px;
+      border-bottom: 2px solid transparent;
+      border-image: linear-gradient(90deg, #a855f7, #ef4444, #f59e0b, #eab308, #22c55e, #3b82f6) 1;
+    }
+
+    header img {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: block;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+
+    main { padding: 16px; }
+
+    .intro {
+      margin: 0 0 18px;
+      color: var(--muted);
+    }
+
+    h2 {
+      margin: 0 0 8px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .preview {
+      display: grid;
+      place-items: center;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      border: 1px dashed #3a4256;
+      border-radius: 10px;
+      background: var(--panel) center / cover no-repeat;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .preview.has-image {
+      border-style: solid;
+      border-color: var(--line);
+    }
+
+    .preview.has-image span { display: none; }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    button {
+      flex: 1;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--text);
+      font: inherit;
+      font-size: 13px;
+      cursor: pointer;
+      transition: border-color 0.15s ease, background-color 0.15s ease;
+    }
+
+    button:hover:not(:disabled) { border-color: #3a4256; }
+
+    button:focus-visible {
+      outline: 2px solid var(--ring);
+      outline-offset: 2px;
+    }
+
+    button.primary {
+      border-color: var(--ring);
+      background: #17202c;
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: default;
+    }
+
+    .status {
+      min-height: 20px;
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 12.5px;
+    }
+
+    .status.error { color: #f87171; }
+
+    input[type="file"] { display: none; }
+
+    @media (prefers-reduced-motion: reduce) {
+      button { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="icons/icon128.png" alt="">
+    <h1>Umanet Hacks</h1>
+  </header>
+
+  <main>
+    <p class="intro">Segna i compiti come completati nel calendario di Umanet. I colori si adattano da soli al tema del sito.</p>
+
+    <h2>Sfondo di Umanet</h2>
+    <div class="preview" id="preview"><span>Nessuna immagine</span></div>
+
+    <div class="actions">
+      <button type="button" class="primary" id="choose">Carica immagine</button>
+      <button type="button" id="remove" disabled>Rimuovi</button>
+    </div>
+    <input type="file" id="file" accept="image/*">
+    <p class="status" id="status" role="status" aria-live="polite"></p>
+  </main>
+
+  <script src="popup.js"></script>
+</body>
+</html>
