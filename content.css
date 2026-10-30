@@ -140,6 +140,11 @@ html.uh-has-bg body {
 .uh-answer-full ul { list-style: disc; }
 .uh-answer-full ol { list-style: decimal; }
 .uh-answer-full li { margin: 0 0 0.15em; padding: 0; }
+.uh-answer-full li > ul,
+.uh-answer-full li > ol { margin: 0.2em 0 0.3em; }
+.uh-answer-full ul ul { list-style: circle; }
+.uh-answer-full ul ul ul { list-style: square; }
+.uh-answer-full ol ol { list-style: lower-alpha; }
 .uh-answer-full li::marker { color: var(--uh-accent); }
 .uh-answer-full h3, .uh-answer-full h4, .uh-answer-full h5, .uh-answer-full h6 {
   margin: 0.4em 0 0.3em;
@@ -191,3 +196,21 @@ html.uh-has-bg body {
 @media (prefers-reduced-motion: reduce) {
   .uh-res-chevron { transition: none; }
 }
+
+/* Elementi dell'HTML ricco (editor) dentro la risposta */
+.uh-answer-full img { max-width: 100%; height: auto; border-radius: 6px; }
+.uh-answer-full blockquote {
+  margin: 0 0 0.6em;
+  padding-left: 0.8em;
+  border-left: 2px solid var(--uh-accent);
+  opacity: 0.85;
+}
+.uh-answer-full pre {
+  margin: 0 0 0.6em;
+  padding: 8px 10px;
+  overflow-x: auto;
+  border-radius: 6px;
+  background: rgba(127, 127, 127, 0.18);
+}
+.uh-answer-full table { margin: 0 0 0.6em; border-collapse: collapse; display: block; overflow-x: auto; }
+.uh-answer-full th, .uh-answer-full td { padding: 4px 8px; border: 1px solid rgba(127, 127, 127, 0.4); }

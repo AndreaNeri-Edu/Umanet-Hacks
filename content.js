@@ -73,7 +73,7 @@ function uhInline(raw) {
 }
 
 function uhMarkdownToHtml(src) {
-  let text = (src || '').replace(/\r/g, '').trim();
+  let text = (src || '').replace(/\r/g, '').replace(/\t/g, '    ').trim();
 
   // Se l'anteprima è stata "appiattita" (niente a capo), ricostruiamo gli elenchi
   if (!text.includes('\n')) {
@@ -81,42 +81,146 @@ function uhMarkdownToHtml(src) {
   }
 
   const lines = text.split('\n');
+  const UL = /^(\s*)[*\-•+◦▪‣]\s+(.*)$/;
+  const OL = /^(\s*)\d+[.)]\s+(.*)$/;
+  const isItem = l => UL.test(l) || OL.test(l);
+
   const out = [];
   let para = [];
-  let list = null; // 'ul' | 'ol'
+  const stack = []; // liste aperte: { type: 'ul'|'ol', indent: n }; l'ultimo <li> resta aperto
 
   const flushPara = () => {
     if (para.length) out.push(`<p>${uhInline(para.join(' '))}</p>`);
     para = [];
   };
-  const closeList = () => {
-    if (list) out.push(`</${list}>`);
-    list = null;
+  const closeTop = () => {
+    const t = stack.pop();
+    out.push(`</li></${t.type}>`);
+  };
+  const closeAll = () => { while (stack.length) closeTop(); };
+
+  const addItem = (type, indent, content) => {
+    const li = `<li>${uhInline(content)}`;
+    if (!stack.length) {
+      out.push(`<${type}>`, li);
+      stack.push({ type, indent });
+      return;
+    }
+    // Più rientrato → sottoelenco dentro l'<li> ancora aperto
+    if (indent > stack[stack.length - 1].indent) {
+      out.push(`<${type}>`, li);
+      stack.push({ type, indent });
+      return;
+    }
+    // Meno rientrato → risali fino al livello giusto
+    while (stack.length > 1 && indent < stack[stack.length - 1].indent) closeTop();
+    const top = stack[stack.length - 1];
+    if (top.type === type) {
+      out.push('</li>', li);
+    } else {
+      // stesso livello ma tipo diverso (es. da puntato a numerato)
+      const lvl = top.indent;
+      closeTop();
+      out.push(`<${type}>`, li);
+      stack.push({ type, indent: lvl });
+    }
   };
 
-  for (const line of lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     let m;
     if (!line.trim()) {
-      flushPara(); closeList();
+      // una riga vuota tra due voci non spezza l'elenco
+      let j = i + 1;
+      while (j < lines.length && !lines[j].trim()) j++;
+      if (!(stack.length && j < lines.length && isItem(lines[j]))) {
+        flushPara(); closeAll();
+      }
     } else if ((m = line.match(/^\s*(#{1,6})\s+(.*)$/))) {
-      flushPara(); closeList();
+      flushPara(); closeAll();
       const lvl = Math.min(m[1].length + 2, 6); // h3..h6: non esageriamo dentro la card
       out.push(`<h${lvl}>${uhInline(m[2])}</h${lvl}>`);
-    } else if ((m = line.match(/^\s*[*\-•+]\s+(.*)$/))) {
+    } else if ((m = line.match(UL))) {
       flushPara();
-      if (list !== 'ul') { closeList(); out.push('<ul>'); list = 'ul'; }
-      out.push(`<li>${uhInline(m[1])}</li>`);
-    } else if ((m = line.match(/^\s*\d+[.)]\s+(.*)$/))) {
+      addItem('ul', m[1].length, m[2]);
+    } else if ((m = line.match(OL))) {
       flushPara();
-      if (list !== 'ol') { closeList(); out.push('<ol>'); list = 'ol'; }
-      out.push(`<li>${uhInline(m[1])}</li>`);
+      addItem('ol', m[1].length, m[2]);
     } else {
-      closeList();
+      closeAll();
       para.push(line.trim());
     }
   }
-  flushPara(); closeList();
+  flushPara(); closeAll();
   return out.join('');
+}
+
+// ---- Risposte scritte con l'editor ricco (HTML) ----
+const UH_ALLOWED = new Set(['P','BR','UL','OL','LI','STRONG','B','EM','I','U','S','STRIKE','A',
+  'H1','H2','H3','H4','H5','H6','BLOCKQUOTE','CODE','PRE','TABLE','THEAD','TBODY','TR','TH','TD',
+  'SUB','SUP','HR','IMG']);
+const UH_DROP = new Set(['SCRIPT','STYLE','IFRAME','OBJECT','EMBED','FORM','INPUT','BUTTON',
+  'TEXTAREA','SELECT','LINK','META','SVG','NOSCRIPT']);
+
+// Tiene solo tag e attributi innocui; span/div (es. ck-list-bogus-paragraph) vengono "scartati"
+function uhSanitizeHtml(html) {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const clean = node => {
+    Array.from(node.childNodes).forEach(ch => {
+      if (ch.nodeType === 3) return;
+      if (ch.nodeType !== 1) { ch.remove(); return; }
+      const tag = ch.tagName;
+      if (UH_DROP.has(tag)) { ch.remove(); return; }
+      clean(ch);
+      if (!UH_ALLOWED.has(tag)) { ch.replaceWith(...Array.from(ch.childNodes)); return; }
+      Array.from(ch.attributes).forEach(a => {
+        const n = a.name.toLowerCase(), v = a.value.trim();
+        if (tag === 'A' && n === 'href' && /^(https?:|mailto:|\/(?!\/))/i.test(v)) return;
+        if (tag === 'IMG' && n === 'src' && /^(https?:\/\/|\/(?!\/))/i.test(v)) return;
+        if (tag === 'IMG' && n === 'alt') return;
+        if ((tag === 'TD' || tag === 'TH') && (n === 'colspan' || n === 'rowspan')) return;
+        ch.removeAttribute(a.name);
+      });
+      if (tag === 'A') { ch.target = '_blank'; ch.rel = 'noopener noreferrer'; }
+    });
+  };
+  clean(doc.body);
+  return doc.body.innerHTML;
+}
+
+// HTML → sanitizzato; testo semplice → markdown
+function uhRenderAnswer(raw) {
+  const s = (raw || '').trim();
+  if (/<\/?(p|ul|ol|li|br|strong|em|b|i|u|h[1-6]|div|span|table|blockquote)\b[^>]*>/i.test(s)) {
+    return uhSanitizeHtml(s);
+  }
+  return uhMarkdownToHtml(s);
+}
+
+const uhNorm = t => (t || '').toLowerCase().replace(/[^a-z0-9àèéìòù]+/g, '');
+const uhAnswerCache = new Map();
+
+// Legge la risposta vera dalla pagina della domanda (stessa origine, stessi cookie)
+function uhFetchAnswer(url, previewText) {
+  if (uhAnswerCache.has(url)) return uhAnswerCache.get(url);
+  const p = (async () => {
+    const res = await fetch(url, { credentials: 'same-origin' });
+    if (!res.ok) return null;
+    const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
+    let raw = '';
+    for (const ta of doc.querySelectorAll('textarea.django_ckeditor_5')) {
+      if (ta.value.trim()) { raw = ta.value; break; }
+    }
+    if (!raw) { const c = doc.querySelector('.ck-content'); raw = c ? c.innerHTML : ''; }
+    if (!raw.trim()) return null;
+    // Sicurezza: usiamo il testo scaricato solo se è la stessa risposta dell'anteprima
+    const tmp = document.createElement('div');
+    tmp.innerHTML = uhRenderAnswer(raw);
+    const head = uhNorm(previewText).slice(0, 25);
+    return uhNorm(tmp.textContent).includes(head) ? raw : null;
+  })().catch(() => null);
+  uhAnswerCache.set(url, p);
+  return p;
 }
 
 /* ----- Card della pagina "Frasi" / risposte -----
@@ -137,7 +241,10 @@ function uhSyncAnswerButtons() {
     if (!preview || !preview.textContent.trim()) return;
 
     // 1) L'anteprima grezza di default sparisce sempre
-    const html = uhMarkdownToHtml(preview.textContent);
+    const previewText = preview.textContent;
+    const html = uhRenderAnswer(previewText);
+    const qLink = card.querySelector('a[href*="/courses/content/response"]');
+    let upgrade = null;
     preview.classList.add('uh-preview-hidden');
 
     // 2) Freccetta + etichetta
@@ -163,9 +270,20 @@ function uhSyncAnswerButtons() {
     inner.appendChild(body);
     wrap.appendChild(inner);
 
+    // Appena passi sopra (o clicchi) scarica la versione vera della risposta e, se coincide, la sostituisce
+    const startUpgrade = () => {
+      if (upgrade || !qLink) return;
+      upgrade = uhFetchAnswer(qLink.href, previewText).then(raw => {
+        if (raw) body.innerHTML = uhRenderAnswer(raw);
+      });
+    };
+    toggle.addEventListener('pointerenter', startUpgrade, { once: true });
+    toggle.addEventListener('focus', startUpgrade, { once: true });
+
     toggle.addEventListener('click', e => {
       e.preventDefault();
       e.stopPropagation();
+      startUpgrade();
       const open = toggle.getAttribute('aria-expanded') !== 'true';
       toggle.setAttribute('aria-expanded', String(open));
       toggle.querySelector('.uh-toggle-label').textContent = open ? 'Nascondi risposta' : 'Mostra risposta';
